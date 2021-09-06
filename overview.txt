@@ -1,0 +1,30 @@
+# SQLAlcemy - Communication between databaes and Python. Has two main components: the core and the Object Relational Mapper (ORM).
+--The core constructs SQL expressions represented by composable objects. It also passes dictionaries that represent parameters for each statement. Inserts, updates and deletes.
+
+--The ORM builds upon Core to provide a means of working with a domain object model mapped to a database schema. Translates changes in Objects state into INSERT, UPDATE and DELETE constructs. 
+
+--ORM is state oriented and Core/SQL Expression language is command oriented 
+
+
+
+# Marshmallow - converts complex datatypes like objects to and from native python datatypes. Schemas!!!
+Validates input data, Deserialize input data to app-level objects and Serialize app-level objects to primitive Python types, the object then can be rendered as JSON.
+
+# Flask - micro-framework that contains a template engine, protocol or convention that ensures that your web application can speak with the webserver  
+
+# os- A module that provides a portable way of using operating system dependent functionality like manipulate paths.
+
+
+
+Init App 
+Database
+Init Database
+Init Marshmallow
+Class/Model
+Schema
+init Schema
+Create an Instance of Model/Class
+Get all Instances of Model/Class
+Get a single instance
+CRUD functionality
+Run server 
