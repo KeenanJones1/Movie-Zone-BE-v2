@@ -1,25 +1,19 @@
-from flask import Flask
-from flask_restful import Api, Resource
-from flask import request, jsonify
-from flask_marshmallow import Marshmallow, fields
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, jsonify
+from flask_marshmallow import Marshmallow
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
-from flask_sqlalchemy import SQLAlchemy
-import pdb
 
-# the Flask class is a WSGI application, a simple calling convention for web servers to forward requests to web applications or frameworks
-# __name__ is needed so Flask knows where to look for resources such as template files and static files.
+
+# app configuration ===================================
 app = Flask(__name__)
-basedir = os.path.abspath(os.path.dirname(__file__))
 CORS(app)
-
-
-# The main entry point for the application, needs to be initialize with a Flask app.
-api = Api(app)
+db = SQLAlchemy(app)
+ma = Marshmallow(app)
+load_dotenv()
 ENV = 'dev'
-breakpoint()
-# init db
+
 if ENV == 'dev':
     app.debug = True
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("MYDB")
@@ -28,14 +22,10 @@ else:
     app.debug = False
     app.config['SQLALCHEMY_DATABASE_URI'] = ''
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-
-# init ma
-ma = Marshmallow(app)
+# end of app configuration===========================================
 
 
-# model creation
+# model creation=============================================
 class Movie(db.Model):
     __tablename__ = 'movie'
     id = db.Column(db.Integer, primary_key=True)
@@ -82,7 +72,7 @@ class Movie(db.Model):
         db.session.add_all([like, self])
         db.session.commit()
 
-    def movie_check(self, thumb, user):
+    def new_thumb_encounter(self, thumb, user):
         if thumb == 'up':
             like = Like(user=user, movie=self)
             self.up_count += 1
@@ -102,7 +92,7 @@ class Movie(db.Model):
                 movie=self, user=user).first() is not None and thumb == 'up':
             self.dislike_to_like(user)
         else:
-            self.movie_check(thumb, user)
+            self.new_thumb_encounter(thumb, user)
 
     def create_and_like(self, thumb, user):
         if thumb == 'down':
@@ -142,6 +132,7 @@ class Dislike(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     movie_id = db.Column(db.Integer, db.ForeignKey("movie.id"), nullable=False)
+# End of Models=================================
 
 
 # schema creation
@@ -194,21 +185,19 @@ def create_movie():
     if movie is not None and user is not None:
         movie.user_movie_check(user, thumbs)
         output = movie_schema.dump(movie)
-        return jsonify({"movie": output, "code": 200})
+        return jsonify({"movie": output, "code": 200, "message": "successfully added movie and user to database"})
     elif movie is None and user is not None:
         movie = Movie(title, query_id)
         movie.create_and_like(thumbs, user)
         output = movie_schema.dump(movie)
-        return jsonify({"movie": output, "code": 200})
+        return jsonify({"movie": output, "code": 200, "message": "successfully added movie to database"})
     else:
         return jsonify({"message": "User not found", "code": 404, "status": "error"})
 
 
 @app.route('/movies_check', methods=['POST'])
 def get_movies():
-    uuid = request.json["uuid"]
     queries = request.json["queries"]
-    user = User.query.filter_by(uuid=uuid).first()
     result = []
     if(queries):
         for ele in queries:
@@ -216,7 +205,7 @@ def get_movies():
             if(movie is not None):
                 found_movie = movie_schema.dump(movie)
                 result.append(found_movie)
-    return jsonify({"movies": result})
+    return jsonify({"movies": result, "message": "all movies successfully received", "code": 200})
 
 
 @app.route('/users', methods=['POST'])
@@ -226,23 +215,16 @@ def create_user():
     db.session.add(new_user)
     db.session.commit()
     output = user_schema.dump(new_user)
-    return jsonify({"user": output})
+    return jsonify({"user": output, "message": "user successfully created", "code": 200})
 
 
 @app.route('/users/<uuid>', methods=['GET'])
 def show_user_info(uuid):
     user = User.query.filter_by(uuid=uuid).first()
     if(user is None):
-        return jsonify({'message': 'Sorry user is not saved'})
-    # likes_scehema(user.likes)
-    # dislikes_schema(user.dislikes)
-    # user.likes
-    # user.dislikes
-    # loop through likes and get the movie titles in likes
-    # same for dislikes
-    # add to object or class? do research on this
+        return jsonify({'message': 'Sorry user is not saved', 'code': 400})
     output = user_schema.dump(user)
-    return jsonify({"user": output})
+    return jsonify({"user": output, "message": "User info received successfully", "code": 200})
 
 
 if __name__ == "__main__":
